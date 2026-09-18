@@ -1,0 +1,6 @@
+{
+  "name": "LexiGuard - AI Legal Assistance & Access",
+  "description": "An intelligent, accessible legal document analyzer, clause risk detector, legalese simplifier, and RAG Q&A assistant designed to democratize legal comprehension.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
