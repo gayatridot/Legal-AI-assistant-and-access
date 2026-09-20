@@ -107,10 +107,10 @@ export function RagChatBot({ documentId, documentText, highContrast }: RagChatBo
       id="rag-chatbot-container"
       role="region"
       aria-label="Grounded Document Q&A Chatbot"
-      className={`rounded-2xl border flex flex-col h-[640px] transition-all overflow-hidden backdrop-blur-md shadow-xs ${
+      className={`rounded-2xl border flex flex-col h-full min-h-[480px] max-h-[640px] transition-all overflow-hidden backdrop-blur-md shadow-lg ${
         highContrast
           ? 'bg-neutral-900/90 border-neutral-700/80 text-white'
-          : 'bg-white/85 border-neutral-200/80 text-neutral-900'
+          : 'bg-slate-900/80 border-cyan-500/30 text-white'
       }`}
     >
       {/* Chat Header */}
@@ -249,8 +249,8 @@ export function RagChatBot({ documentId, documentText, highContrast }: RagChatBo
       </div>
 
       {/* Suggested Prompt Chips */}
-      <div className="px-4 py-2.5 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/40 flex items-center gap-2 overflow-x-auto scrollbar-none">
-        <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+      <div className="px-4 py-2.5 border-t border-cyan-500/20 bg-slate-950/60 flex items-center gap-2 overflow-x-auto scrollbar-none">
+        <span className="text-[11px] font-semibold text-cyan-300/80 whitespace-nowrap">
           Suggested:
         </span>
         {QUICK_SUGGESTIONS.map((suggestion, idx) => (
@@ -261,7 +261,7 @@ export function RagChatBot({ documentId, documentText, highContrast }: RagChatBo
             whileTap={{ scale: 0.96 }}
             disabled={isLoading}
             onClick={() => handleSendMessage(suggestion)}
-            className="px-3 py-1 rounded-full text-[11px] bg-white/90 dark:bg-neutral-800/90 border border-neutral-200/80 dark:border-neutral-700 hover:border-blue-300 hover:bg-blue-50/60 text-neutral-700 dark:text-neutral-300 whitespace-nowrap transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
+            className="px-3 py-1 rounded-full text-[11px] bg-slate-900 border border-cyan-500/30 hover:border-cyan-400 hover:bg-cyan-500/20 text-slate-200 whitespace-nowrap transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-500 shadow-2xs"
           >
             {suggestion}
           </motion.button>
@@ -271,7 +271,7 @@ export function RagChatBot({ documentId, documentText, highContrast }: RagChatBo
       {/* Input Form */}
       <form
         onSubmit={handleSubmit}
-        className="p-3 sm:p-4 border-t border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 flex items-center gap-2.5"
+        className="p-3 sm:p-4 border-t border-cyan-500/20 bg-slate-950/90 flex items-center gap-2.5"
       >
         <input
           type="text"
@@ -280,15 +280,15 @@ export function RagChatBot({ documentId, documentText, highContrast }: RagChatBo
           placeholder="Ask a question about this contract (e.g. 'Can I terminate early?')..."
           aria-label="Ask a question about the document"
           disabled={isLoading}
-          className="flex-1 py-2.5 px-4 rounded-xl border border-neutral-300/80 dark:border-neutral-700 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-neutral-50/60 dark:bg-neutral-950/60 transition-all"
+          className="flex-1 py-2.5 px-4 rounded-xl border border-cyan-500/30 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-slate-900 text-white placeholder-slate-400 transition-all"
         />
         <motion.button
           type="submit"
-          whileHover={{ scale: 1.04 }}
+          whileHover={{ scale: 1.04, boxShadow: '0 0 15px rgba(56, 189, 248, 0.5)' }}
           whileTap={{ scale: 0.96 }}
           disabled={isLoading || !input.trim()}
           aria-label="Send question"
-          className="py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+          className="py-2.5 px-5 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 text-xs sm:text-sm font-extrabold inline-flex items-center gap-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-md"
         >
           <span>Ask</span>
           <Send className="w-3.5 h-3.5" aria-hidden="true" />

@@ -1,6 +1,6 @@
 /**
  * @fileoverview Express + Vite Full-Stack Server
- * Binds to 0.0.0.0:3000 and routes API endpoints /api/analyze and /api/chat
+ * Binds to localhost:3000 and routes API endpoints /api/analyze and /api/chat
  * with Vite dev middleware in development and static asset serving in production.
  */
 
@@ -138,8 +138,8 @@ async function start() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[LexiGuard] Server listening on http://0.0.0.0:${PORT}`);
+  app.listen(PORT, 'localhost', () => {
+    console.log(`[LexiGuard] Server listening on http://localhost:${PORT}`);
   });
 }
 

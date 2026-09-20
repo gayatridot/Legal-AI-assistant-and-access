@@ -53,15 +53,15 @@ export function RiskOverviewCard({ summary, missingProtections, highContrast }: 
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className={`rounded-2xl border p-6 sm:p-8 backdrop-blur-md transition-all duration-300 shadow-xs hover:shadow-md ${
+      className={`rounded-3xl border p-6 sm:p-8 backdrop-blur-xl transition-all duration-300 shadow-xl ${
         highContrast
           ? 'bg-neutral-900/90 border-neutral-700/80 text-white'
-          : 'bg-white/85 border-neutral-200/80 text-neutral-900'
+          : 'bg-slate-900/85 border-cyan-500/30 text-white shadow-[0_0_40px_rgba(56,189,248,0.15)]'
       }`}
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
         {/* Left Column: Risk Gauge & Score with Animated Progress Ring & Glowing Indicator */}
-        <div className="lg:col-span-4 relative flex flex-col items-center justify-center p-6 rounded-2xl bg-neutral-50/60 dark:bg-neutral-950/40 border border-neutral-200/60 dark:border-neutral-800/60 text-center overflow-hidden">
+        <div className="lg:col-span-4 relative flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-950/60 border border-cyan-500/20 text-center overflow-hidden">
           {/* Subtle Ambient Radial Glow */}
           <div
             className={`absolute w-44 h-44 rounded-full blur-3xl opacity-60 pointer-events-none transition-all duration-700 ${theme.glowBg}`}
@@ -205,12 +205,12 @@ export function RiskOverviewCard({ summary, missingProtections, highContrast }: 
           </div>
 
           {/* Plain English Executive Summary Card with Glassmorphic Shading */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50/70 dark:bg-neutral-950/50 border border-neutral-200/70 dark:border-neutral-800/70 backdrop-blur-xs text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm leading-relaxed shadow-2xs">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 mb-1.5 flex items-center gap-1.5">
-              <FileCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/60 border border-cyan-500/20 text-slate-200 text-xs sm:text-sm leading-relaxed shadow-md">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-300 mb-1.5 flex items-center gap-1.5">
+              <FileCheck className="w-4 h-4 text-cyan-400" aria-hidden="true" />
               <span>Plain English Executive Summary</span>
             </h3>
-            <p className="text-neutral-700 dark:text-neutral-300">{summary.executiveSummary}</p>
+            <p className="text-slate-300">{summary.executiveSummary}</p>
           </div>
 
           {/* Metadata Badges: Parties & Dates */}

@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BookMarked, ArrowRight, CheckCircle2, ChevronRight, HelpCircle, Sparkles, BookOpen } from 'lucide-react';
+import {
+  BookMarked,
+  CheckCircle2,
+  BookOpen,
+  Sparkles,
+  ArrowLeft,
+  ArrowRight,
+  ScrollText,
+  Lightbulb,
+  MessageSquareQuote,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { ClauseAnalysis } from '../types/legal.js';
 import { RiskBadge } from './RiskBadge.js';
 
@@ -11,7 +23,6 @@ interface LegaleseSimplifierProps {
 
 interface GlossaryTerm {
   term: string;
-  pronunciation?: string;
   plainMeaning: string;
   realWorldExample: string;
 }
@@ -19,42 +30,72 @@ interface GlossaryTerm {
 const COMMON_LEGAL_GLOSSARY: GlossaryTerm[] = [
   {
     term: 'Indemnify & Hold Harmless',
-    plainMeaning: 'To pay for someone else’s legal costs, settlements, or damages if they get sued by a third party because of your work.',
-    realWorldExample: 'If a client gets sued for copyright infringement over code you wrote, an indemnity clause forces you to pay their lawyers.',
+    plainMeaning:
+      "You agree to pay for the other party's legal costs and damages if they get sued because of your work.",
+    realWorldExample:
+      'If a client is sued for copyright infringement over code you wrote, you must pay their lawyers.',
   },
   {
     term: 'Liquidated Damages',
-    plainMeaning: 'A pre-set penalty fee that you must pay immediately if a contract deadline or obligation is broken, without needing to prove actual financial loss.',
-    realWorldExample: 'Paying a fixed $1,000 fine for every day a project is late.',
+    plainMeaning:
+      'A pre-set penalty you must pay immediately if a deadline or obligation is broken — no need to prove actual loss.',
+    realWorldExample: 'A fixed $1,000 fine for every day a project is late.',
   },
   {
     term: 'Severability',
-    plainMeaning: 'If a judge declares one specific sentence of this contract illegal or void, the rest of the contract remains active and enforceable.',
-    realWorldExample: 'If an extreme non-compete clause is thrown out by a court, the payment and IP terms still apply.',
+    plainMeaning:
+      'If a court voids one clause, the rest of the contract remains fully enforceable.',
+    realWorldExample:
+      'An extreme non-compete is thrown out but the payment terms still apply.',
   },
   {
     term: 'Force Majeure',
-    plainMeaning: 'An "Act of God" clause excusing both parties from performance if an uncontrollable disaster (earthquake, war, pandemic) occurs.',
-    realWorldExample: 'You are not penalized for late delivery if an earthquake shuts down power across the entire region.',
+    plainMeaning:
+      'An "Act of God" clause excusing both parties from performance during uncontrollable disasters.',
+    realWorldExample:
+      'No penalty for late delivery if an earthquake shuts down power across the region.',
   },
   {
     term: 'Subrogation Waiver',
-    plainMeaning: 'Preventing insurance companies from suing the other party to recover money after paying an insurance claim.',
-    realWorldExample: 'If water damage floods a leased store, the tenant’s insurance pays out and agrees not to sue the landlord.',
+    plainMeaning:
+      'Prevents insurance companies from suing the other party after paying out a claim.',
+    realWorldExample:
+      "Water damages a leased store; the tenant's insurer pays and agrees not to sue the landlord.",
   },
   {
     term: 'Forum Non Conveniens',
-    plainMeaning: 'An objection claiming that the court venue selected by the other party is unfair or unreasonably far away.',
-    realWorldExample: 'A freelancer in Texas objecting to flying to London to contest an unpaid $500 invoice.',
+    plainMeaning:
+      'An objection that the court venue chosen by the other party is unfairly far away.',
+    realWorldExample: 'A Texas freelancer objecting to flying to London over an unpaid $500 invoice.',
   },
   {
     term: 'Work Made for Hire',
-    plainMeaning: 'An intellectual property doctrine where the hiring company owns 100% of all creations from the moment of inception, as if they created it themselves.',
-    realWorldExample: 'You cannot reuse or showcase the software code in your future portfolio without explicit written consent.',
+    plainMeaning:
+      'The hiring company owns 100% of all creations from day one — you retain nothing.',
+    realWorldExample:
+      'You cannot reuse the software you built in your portfolio without written permission.',
   },
 ];
 
-export function LegaleseSimplifier({ clauses, highContrast }: LegaleseSimplifierProps) {
+/** Colour token helper for clause pills */
+function clausePillClasses(riskLevel: string, selected: boolean) {
+  if (selected) {
+    const isHigh = riskLevel === 'HIGH' || riskLevel === 'CRITICAL';
+    const isMed = riskLevel === 'MEDIUM';
+    if (isHigh) return 'bg-rose-500 text-white border-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.5)]';
+    if (isMed) return 'bg-amber-500 text-slate-950 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)]';
+    return 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.45)]';
+  }
+  return 'bg-slate-800/70 border-slate-700/60 text-slate-300 hover:bg-slate-700/80 hover:text-white';
+}
+
+function riskDotColor(riskLevel: string) {
+  if (riskLevel === 'HIGH' || riskLevel === 'CRITICAL') return { ping: 'bg-rose-400', dot: 'bg-rose-400' };
+  if (riskLevel === 'MEDIUM') return { ping: 'bg-amber-400', dot: 'bg-amber-400' };
+  return { ping: 'bg-emerald-400', dot: 'bg-emerald-400' };
+}
+
+export function LegaleseSimplifier({ clauses }: LegaleseSimplifierProps) {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [showGlossary, setShowGlossary] = useState<boolean>(false);
 
@@ -62,34 +103,32 @@ export function LegaleseSimplifier({ clauses, highContrast }: LegaleseSimplifier
 
   if (!selectedClause) {
     return (
-      <div className="p-8 text-center text-sm text-neutral-500">
+      <div className="p-8 text-center text-sm text-slate-400">
         No clauses loaded for comparison.
       </div>
     );
   }
 
   return (
-    <div id="legalese-simplifier" role="region" aria-label="Side-by-Side Legalese Simplifier" className="space-y-6">
-      {/* Top Banner with Glossary Trigger */}
-      <motion.div
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`p-5 rounded-2xl border backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors shadow-xs ${
-          highContrast
-            ? 'bg-neutral-900/90 border-neutral-700/80 text-white'
-            : 'bg-white/85 border-neutral-200/80 text-neutral-900'
-        }`}
-      >
-        <div>
-          <h3 className="text-base font-bold tracking-tight text-neutral-900 dark:text-white flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-            <span>Side-by-Side Legalese Translator</span>
-          </h3>
-          <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 leading-relaxed">
-            Compare dense legal jargon directly against everyday 8th-grade conversational English.
-          </p>
+    <div id="legalese-simplifier" role="region" aria-label="Side-by-Side Legalese Simplifier" className="space-y-5">
+
+      {/* ─────────────────────────────────────── */}
+      {/* SECTION HEADER                          */}
+      {/* ─────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500/30 to-indigo-500/20 border border-blue-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+            <Sparkles className="w-5 h-5 text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-white tracking-tight">Legalese Simplifier</h2>
+            <p className="text-xs text-slate-400 font-medium">
+              Dense legal jargon → plain 8th-grade English, side by side
+            </p>
+          </div>
         </div>
 
+        {/* Glossary toggle */}
         <motion.button
           type="button"
           whileHover={{ scale: 1.03 }}
@@ -97,48 +136,51 @@ export function LegaleseSimplifier({ clauses, highContrast }: LegaleseSimplifier
           onClick={() => setShowGlossary(!showGlossary)}
           aria-expanded={showGlossary}
           aria-controls="jargon-glossary-panel"
-          className="px-3.5 py-2 rounded-xl bg-blue-50/90 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 text-xs font-semibold inline-flex items-center gap-2 transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500 shrink-0"
+          className="px-4 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/35 text-indigo-300 text-xs font-bold inline-flex items-center gap-2 transition-all focus:outline-none shadow-md"
         >
-          <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
+          <BookOpen className="w-3.5 h-3.5" />
           <span>{showGlossary ? 'Close Jargon Glossary' : 'Open Jargon Glossary'}</span>
+          {showGlossary ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </motion.button>
-      </motion.div>
+      </div>
 
-      {/* Jargon Glossary Drawer (Collapsible with smooth slide-down & fade-in) */}
+      {/* ─────────────────────────────────────── */}
+      {/* JARGON GLOSSARY DRAWER                  */}
+      {/* ─────────────────────────────────────── */}
       <AnimatePresence initial={false}>
         {showGlossary && (
           <motion.div
             id="jargon-glossary-panel"
-            initial={{ opacity: 0, height: 0, y: -8 }}
-            animate={{ opacity: 1, height: 'auto', y: 0 }}
-            exit={{ opacity: 0, height: 0, y: -8 }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-50/85 via-indigo-50/60 to-purple-50/40 dark:from-blue-950/40 dark:via-neutral-900 dark:to-neutral-950 border border-blue-200/80 dark:border-blue-900/50 shadow-xs backdrop-blur-md">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300 flex items-center gap-2">
-                  <BookMarked className="w-4 h-4 text-blue-700 dark:text-blue-400" aria-hidden="true" />
-                  <span>Essential Legal Jargon Cheat Sheet</span>
+            <div className="p-5 rounded-2xl bg-indigo-500/8 border border-indigo-500/25 backdrop-blur-md">
+              <div className="flex items-center gap-2 mb-4">
+                <BookMarked className="w-4 h-4 text-indigo-400" />
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-indigo-300">
+                  Essential Legal Jargon Cheat Sheet
                 </h4>
-                <span className="text-[11px] text-blue-700 dark:text-blue-300 font-medium">
-                  Common contractual terms decoded into plain English
+                <span className="ml-auto text-[11px] text-slate-400 hidden sm:block">
+                  Common contractual terms decoded
                 </span>
               </div>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {COMMON_LEGAL_GLOSSARY.map((item, idx) => (
                   <motion.div
                     key={idx}
                     whileHover={{ y: -2 }}
-                    className="p-3.5 rounded-xl bg-white/90 dark:bg-neutral-900/85 border border-blue-100 dark:border-neutral-800 text-xs space-y-1.5 shadow-2xs"
+                    className="p-4 rounded-xl bg-slate-900/80 border border-slate-700/60 space-y-2"
                   >
-                    <strong className="block text-blue-950 dark:text-blue-200 font-bold text-xs">
+                    <strong className="block text-indigo-300 font-extrabold text-xs tracking-tight">
                       {item.term}
                     </strong>
-                    <p className="text-neutral-700 dark:text-neutral-300 leading-snug">{item.plainMeaning}</p>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 italic pt-1.5 border-t border-neutral-100 dark:border-neutral-800">
-                      e.g., {item.realWorldExample}
+                    <p className="text-sm text-slate-200 leading-snug">{item.plainMeaning}</p>
+                    <p className="text-[11px] text-slate-400 italic pt-2 border-t border-slate-700/50 leading-snug">
+                      e.g. {item.realWorldExample}
                     </p>
                   </motion.div>
                 ))}
@@ -148,13 +190,13 @@ export function LegaleseSimplifier({ clauses, highContrast }: LegaleseSimplifier
         )}
       </AnimatePresence>
 
-      {/* Clause Navigation Pills with Pulsing Dots */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+      {/* ─────────────────────────────────────── */}
+      {/* CLAUSE NAVIGATION PILLS                 */}
+      {/* ─────────────────────────────────────── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
         {clauses.map((clause, idx) => {
           const isSelected = selectedIndex === idx;
-          const isHigh = clause.riskLevel === 'HIGH' || clause.riskLevel === 'CRITICAL';
-          const isMed = clause.riskLevel === 'MEDIUM';
-
+          const dots = riskDotColor(clause.riskLevel);
           return (
             <motion.button
               key={clause.id}
@@ -162,143 +204,153 @@ export function LegaleseSimplifier({ clauses, highContrast }: LegaleseSimplifier
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setSelectedIndex(idx)}
-              className={`py-2 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isSelected
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-white/80 dark:bg-neutral-800/80 hover:bg-neutral-100 text-neutral-700 dark:text-neutral-300 border border-neutral-200/70 dark:border-neutral-700/60'
-              }`}
+              className={`py-2 px-3.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 focus:outline-none border ${clausePillClasses(clause.riskLevel, isSelected)}`}
             >
-              <span>{clause.title.length > 24 ? `${clause.title.slice(0, 22)}...` : clause.title}</span>
+              <span>{clause.title.length > 22 ? `${clause.title.slice(0, 20)}…` : clause.title}</span>
               <span className="relative flex h-2 w-2 shrink-0">
-                <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    isHigh ? 'bg-rose-400' : isMed ? 'bg-amber-400' : 'bg-emerald-400'
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    isHigh ? 'bg-rose-500' : isMed ? 'bg-amber-500' : 'bg-emerald-500'
-                  }`}
-                />
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-70 ${dots.ping}`} />
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${dots.dot}`} />
               </span>
             </motion.button>
           );
         })}
       </div>
 
-      {/* Side-by-Side Comparison Grid with Glassmorphic Elevation */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Left Column: Original Dense Contract Text */}
+      {/* ─────────────────────────────────────── */}
+      {/* SIDE-BY-SIDE COMPARISON                 */}
+      {/* ─────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        {/* LEFT — Original verbatim text */}
         <motion.div
           whileHover={{ y: -2 }}
           transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-          className={`rounded-2xl border p-6 flex flex-col justify-between backdrop-blur-md transition-all duration-300 shadow-xs hover:shadow-md ${
-            highContrast
-              ? 'bg-neutral-900/90 border-neutral-700/80 text-white'
-              : 'bg-neutral-50/70 dark:bg-neutral-900/70 border-neutral-200/80 dark:border-neutral-800/80 text-neutral-900'
-          }`}
+          className="rounded-2xl border border-slate-700/60 bg-slate-900/80 backdrop-blur-xl overflow-hidden flex flex-col"
         >
-          <div>
-            <div className="flex items-center justify-between gap-2 pb-3.5 mb-3.5 border-b border-neutral-200/70 dark:border-neutral-800/70">
-              <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                Original Verbatim Contract Text
-              </span>
-              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-neutral-200/80 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium">
-                Legal Drafting
+          {/* Panel header */}
+          <div className="px-5 py-3.5 border-b border-slate-700/50 bg-slate-800/50 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ScrollText className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                Original Verbatim Text
               </span>
             </div>
-            <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-2.5">{selectedClause.title}</h4>
-            <div className="font-mono text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto p-4 rounded-xl bg-white/90 dark:bg-neutral-950/70 border border-neutral-200/70 dark:border-neutral-800/70 shadow-inner">
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-700/60 text-slate-300 border border-slate-600/40">
+              Legal Drafting
+            </span>
+          </div>
+
+          {/* Clause title + category */}
+          <div className="px-5 pt-4 pb-2">
+            <h4 className="text-base font-extrabold text-white leading-tight mb-1">
+              {selectedClause.title}
+            </h4>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                {selectedClause.category}
+              </span>
+              <RiskBadge level={selectedClause.riskLevel} score={selectedClause.riskScore} showScore size="sm" />
+            </div>
+          </div>
+
+          {/* Verbatim body */}
+          <div className="px-5 pb-5 flex-1">
+            <div className="mt-3 font-mono text-sm text-slate-300 leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto p-4 rounded-xl bg-slate-950/70 border border-slate-700/50 shadow-inner">
               {selectedClause.originalText}
             </div>
           </div>
-
-          <div className="mt-5 pt-3.5 border-t border-neutral-200/60 dark:border-neutral-800/60 flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400">
-            <span>Category: {selectedClause.category}</span>
-            <RiskBadge level={selectedClause.riskLevel} score={selectedClause.riskScore} showScore size="sm" />
-          </div>
         </motion.div>
 
-        {/* Right Column: 8th-Grade Plain English Translation */}
+        {/* RIGHT — Plain English */}
         <motion.div
           whileHover={{ y: -2 }}
           transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-          className={`rounded-2xl border p-6 flex flex-col justify-between backdrop-blur-md transition-all duration-300 shadow-xs hover:shadow-md ${
-            highContrast
-              ? 'bg-neutral-900/90 border-neutral-700/80 text-white'
-              : 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-200/80 dark:border-blue-900/60 text-neutral-900'
-          }`}
+          className="rounded-2xl border border-blue-500/30 bg-blue-500/5 backdrop-blur-xl overflow-hidden flex flex-col shadow-[0_0_25px_rgba(59,130,246,0.1)]"
         >
-          <div>
-            <div className="flex items-center justify-between gap-2 pb-3.5 mb-3.5 border-b border-blue-200/70 dark:border-blue-900/60">
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-                <span>Plain English Translation (8th-Grade Level)</span>
-              </span>
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200">
-                Accessible
+          {/* Panel header */}
+          <div className="px-5 py-3.5 border-b border-blue-500/20 bg-blue-500/10 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-400">
+                Plain English (8th-Grade Level)
               </span>
             </div>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+              Accessible
+            </span>
+          </div>
 
-            <h4 className="text-sm font-bold text-blue-950 dark:text-blue-100 mb-2.5">
-              What This Means In Practice:
-            </h4>
-
-            <div className="p-4 rounded-xl bg-white/95 dark:bg-neutral-900/90 border border-blue-100/80 dark:border-blue-900/40 text-xs sm:text-sm leading-relaxed text-neutral-800 dark:text-neutral-200 shadow-2xs space-y-3.5">
-              <p className="font-semibold text-neutral-900 dark:text-white leading-relaxed">
+          <div className="px-5 pt-4 pb-5 flex-1 space-y-4">
+            {/* What it means */}
+            <div>
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-400 mb-2 flex items-center gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5" />
+                What this means in practice
+              </h4>
+              <p className="text-sm text-white font-medium leading-relaxed">
                 {selectedClause.plainEnglish}
               </p>
+            </div>
 
-              <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-xs space-y-1">
-                <strong className="block font-bold text-amber-900 dark:text-amber-200 text-[11px] uppercase tracking-wider">
-                  Key Practical Takeaway:
-                </strong>
-                <p className="text-amber-800 dark:text-amber-300 leading-relaxed">
-                  {selectedClause.potentialImpact}
+            {/* Key takeaway */}
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25">
+              <span className="block text-[11px] font-extrabold uppercase tracking-wider text-amber-400 mb-2">
+                ⚡ Key Practical Takeaway
+              </span>
+              <p className="text-sm text-amber-100 leading-relaxed">
+                {selectedClause.potentialImpact}
+              </p>
+            </div>
+
+            {/* Counter-clause */}
+            {selectedClause.recommendedCounterClause && (
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquareQuote className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">
+                    Fairer Language to Ask For
+                  </span>
+                </div>
+                <p className="text-sm font-mono text-emerald-200 italic leading-relaxed bg-slate-950/50 p-3 rounded-lg border border-emerald-800/30 select-all">
+                  &ldquo;{selectedClause.recommendedCounterClause}&rdquo;
                 </p>
               </div>
-
-              {selectedClause.recommendedCounterClause && (
-                <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 text-xs space-y-1">
-                  <strong className="block font-bold text-emerald-900 dark:text-emerald-200 text-[11px] uppercase tracking-wider">
-                    Fairer Language to Ask For:
-                  </strong>
-                  <p className="text-emerald-800 dark:text-emerald-300 italic leading-relaxed">
-                    &ldquo;{selectedClause.recommendedCounterClause}&rdquo;
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-5 pt-3.5 border-t border-blue-200/60 dark:border-blue-900/60 flex items-center justify-between text-xs">
-            <span className="text-neutral-500 dark:text-neutral-400 font-medium">
-              Clause {selectedIndex + 1} of {clauses.length}
-            </span>
-            <div className="flex gap-2">
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                disabled={selectedIndex === 0}
-                onClick={() => setSelectedIndex(prev => Math.max(0, prev - 1))}
-                className="px-3 py-1.5 rounded-xl border border-neutral-300/80 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 hover:bg-neutral-50 disabled:opacity-40 text-xs font-semibold focus:outline-none shadow-2xs"
-              >
-                Previous
-              </motion.button>
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                disabled={selectedIndex === clauses.length - 1}
-                onClick={() => setSelectedIndex(prev => Math.min(clauses.length - 1, prev + 1))}
-                className="px-3 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 text-xs font-semibold focus:outline-none shadow-2xs"
-              >
-                Next
-              </motion.button>
-            </div>
+            )}
           </div>
         </motion.div>
+      </div>
+
+      {/* ─────────────────────────────────────── */}
+      {/* NAVIGATION FOOTER                       */}
+      {/* ─────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-1">
+        <span className="text-xs font-semibold text-slate-400">
+          Clause <span className="text-white">{selectedIndex + 1}</span> of {clauses.length}
+        </span>
+        <div className="flex gap-2">
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={selectedIndex === 0}
+            onClick={() => setSelectedIndex(prev => Math.max(0, prev - 1))}
+            className="px-4 py-2 rounded-xl border border-slate-700/60 bg-slate-800/70 text-slate-300 hover:bg-slate-700 disabled:opacity-30 text-xs font-bold inline-flex items-center gap-1.5 focus:outline-none transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Previous</span>
+          </motion.button>
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={selectedIndex === clauses.length - 1}
+            onClick={() => setSelectedIndex(prev => Math.min(clauses.length - 1, prev + 1))}
+            className="px-4 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-300 disabled:opacity-30 text-xs font-bold inline-flex items-center gap-1.5 focus:outline-none transition-all"
+          >
+            <span>Next</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </motion.button>
+        </div>
       </div>
     </div>
   );

@@ -16,40 +16,47 @@ export function RiskBadge({
   className = '',
 }: RiskBadgeProps) {
   const normalized = (level || 'LOW').toUpperCase();
-
   const isHigh = normalized === 'HIGH' || normalized === 'CRITICAL';
   const isMedium = normalized === 'MEDIUM';
 
-  let config = {
-    label: 'Fair / Low Risk',
-    pillClass:
-      'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs',
-    pingColor: 'bg-emerald-400',
-    dotColor: 'bg-emerald-500',
+  type Config = {
+    label: string;
+    pill: string;
+    ping: string;
+    dot: string;
+    glow: string;
+  };
+
+  let config: Config = {
+    label: 'Low Risk',
+    pill: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40',
+    ping: 'bg-emerald-400',
+    dot: 'bg-emerald-400',
+    glow: 'shadow-[0_0_10px_rgba(52,211,153,0.35)]',
   };
 
   if (isHigh) {
     config = {
-      label: 'High Risk',
-      pillClass:
-        'bg-rose-50/90 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/60 shadow-2xs',
-      pingColor: 'bg-rose-400',
-      dotColor: 'bg-rose-500',
+      label: normalized === 'CRITICAL' ? 'Critical Risk' : 'High Risk',
+      pill: 'bg-rose-500/15 text-rose-300 border-rose-500/40',
+      ping: 'bg-rose-400',
+      dot: 'bg-rose-400',
+      glow: 'shadow-[0_0_10px_rgba(251,113,133,0.4)]',
     };
   } else if (isMedium) {
     config = {
       label: 'Medium Risk',
-      pillClass:
-        'bg-amber-50/90 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60 shadow-2xs',
-      pingColor: 'bg-amber-400',
-      dotColor: 'bg-amber-500',
+      pill: 'bg-amber-500/15 text-amber-300 border-amber-500/40',
+      ping: 'bg-amber-400',
+      dot: 'bg-amber-400',
+      glow: 'shadow-[0_0_10px_rgba(251,191,36,0.35)]',
     };
   }
 
   const sizeClasses = {
     sm: 'text-[10px] px-2 py-0.5 gap-1.5',
-    md: 'text-xs px-2.5 py-1 gap-2',
-    lg: 'text-xs sm:text-sm px-3.5 py-1.5 gap-2.5',
+    md: 'text-xs px-3 py-1 gap-2',
+    lg: 'text-sm px-3.5 py-1.5 gap-2',
   };
 
   const dotSizes = {
@@ -60,22 +67,16 @@ export function RiskBadge({
 
   return (
     <span
-      className={`inline-flex items-center font-semibold rounded-full border backdrop-blur-xs whitespace-nowrap transition-all duration-200 select-none ${
-        sizeClasses[size]
-      } ${config.pillClass} ${className}`}
+      className={`inline-flex items-center font-bold rounded-full border whitespace-nowrap select-none ${sizeClasses[size]} ${config.pill} ${config.glow} ${className}`}
     >
       <span className={`relative flex ${dotSizes[size]} shrink-0`} aria-hidden="true">
-        <span
-          className={`animate-ping absolute inline-flex h-full w-full rounded-full ${config.pingColor} opacity-75`}
-        />
-        <span className={`relative inline-flex rounded-full ${dotSizes[size]} ${config.dotColor}`} />
+        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${config.ping} opacity-60`} />
+        <span className={`relative inline-flex rounded-full ${dotSizes[size]} ${config.dot}`} />
       </span>
       <span>
         {config.label}
         {showScore && typeof score === 'number' && (
-          <span className="font-mono font-normal opacity-85 ml-1">
-            &middot; {score}/100
-          </span>
+          <span className="font-mono font-normal opacity-75 ml-1">&middot; {score}</span>
         )}
       </span>
     </span>

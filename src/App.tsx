@@ -1,27 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Shield,
-  FileText,
-  AlertTriangle,
   Scale,
-  MessageSquare,
-  Sparkles,
-  ClipboardList,
+  AlertTriangle,
   Layers,
-  ArrowLeft,
-  CheckCircle,
+  Sparkles,
+  MessageSquare,
+  ClipboardList,
 } from 'lucide-react';
-import { LegalDisclaimerBanner } from '../components/LegalDisclaimerBanner.js';
-import { Header } from '../components/Header.js';
+
+import { AppNavbar } from '../components/AppNavbar.js';
 import { DocumentUploader } from '../components/DocumentUploader.js';
 import { RiskOverviewCard } from '../components/RiskOverviewCard.js';
 import { ClauseRiskEngine } from '../components/ClauseRiskEngine.js';
 import { LegaleseSimplifier } from '../components/LegaleseSimplifier.js';
 import { RagChatBot } from '../components/RagChatBot.js';
 import { LawyerPrepKit } from '../components/LawyerPrepKit.js';
+
+import { AnimatedWaveBackground } from '../components/AnimatedWaveBackground.js';
+import { LandingHero } from '../components/LandingHero.js';
+import { SampleCardsSection } from '../components/SampleCardsSection.js';
+import { FeatureHighlightBar } from '../components/FeatureHighlightBar.js';
+import { FloatingRagRobot } from '../components/FloatingRagRobot.js';
+import { AnalysisHeroBanner } from '../components/AnalysisHeroBanner.js';
+
 import { DocumentAnalysisResult } from '../types/legal.js';
-import { SAMPLE_CONTRACTS } from '../lib/sample-contracts.js';
+import { SAMPLE_CONTRACTS, SampleContract } from '../lib/sample-contracts.js';
 
 export default function App() {
   const [analysisResult, setAnalysisResult] = useState<DocumentAnalysisResult | null>(null);
@@ -30,14 +34,7 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'risk' | 'simplifier' | 'rag' | 'prepkit'>('risk');
   const [highContrast, setHighContrast] = useState<boolean>(false);
-
-  // Auto-analyze the first sample contract on initial load for instant demonstration
-  useEffect(() => {
-    const initialSample = SAMPLE_CONTRACTS[0];
-    if (initialSample && !analysisResult && !isLoading) {
-      handleAnalyzeText(initialSample.text, initialSample.title);
-    }
-  }, []);
+  const [forcedUploadTab, setForcedUploadTab] = useState<'samples' | 'paste' | 'upload'>('samples');
 
   const handleAnalyzeText = async (text: string, fileName?: string) => {
     setIsLoading(true);
@@ -119,6 +116,16 @@ export default function App() {
     }
   };
 
+  const handleHeroActionSelect = (action: 'samples' | 'paste' | 'upload') => {
+    setForcedUploadTab(action);
+    const uploaderEl = document.getElementById('document-uploader-section');
+    if (uploaderEl) uploaderEl.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSampleSelect = async (sample: SampleContract) => {
+    await handleAnalyzeText(sample.text, sample.title);
+  };
+
   const handleReset = () => {
     setAnalysisResult(null);
     setDocumentText('');
@@ -126,281 +133,272 @@ export default function App() {
     setActiveTab('risk');
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
+
+  // -------------------------------------------------------
+  // Shared footer used on both views
+  // -------------------------------------------------------
+  const sharedFooter = (
+    <footer className="border-t border-cyan-500/20 py-8 mt-12 bg-slate-950/80 backdrop-blur-md relative z-20 text-xs text-slate-400">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Scale className="w-4 h-4 text-cyan-400" />
+          <span className="font-semibold text-white">LexiGuard &middot; AI Legal Assistant &amp; Access</span>
+        </div>
+        <p className="text-center sm:text-right max-w-xl text-[11px] leading-relaxed">
+          LexiGuard provides automated legal document analysis and clause education.
+          It does not constitute licensed legal advice, lawyer solicitation, or formal representation.
+        </p>
+      </div>
+    </footer>
+  );
 
   return (
     <div
-      className={`min-h-screen flex flex-col font-sans transition-colors ${
-        highContrast ? 'bg-neutral-950 text-white' : 'bg-[#FAFAFA] text-neutral-900'
+      className={`min-h-screen flex flex-col font-sans transition-colors relative overflow-x-hidden ${
+        highContrast ? 'bg-neutral-950 text-white' : 'bg-[#040817] text-white'
       }`}
     >
-      {/* Top Prominent Legal Disclaimer Banner */}
-      <LegalDisclaimerBanner highContrast={highContrast} />
+      {/* Animated background is always present behind both views */}
+      <AnimatedWaveBackground highContrast={highContrast} />
 
-      {/* Main App Header */}
-      <Header
-        documentTitle={analysisResult?.summary.documentType || analysisResult?.fileName}
-        hasAnalysis={Boolean(analysisResult)}
-        highContrast={highContrast}
-        onToggleHighContrast={() => setHighContrast(!highContrast)}
-        onReset={handleReset}
-        onPrint={handlePrint}
-      />
+      {!analysisResult ? (
+        /* -------------------------------------------------- */
+        /* LANDING VIEW                                        */
+        /* -------------------------------------------------- */
+        <div className="relative w-full flex-1 flex flex-col">
+          {/* LandingHero already includes AppNavbar (landing mode) */}
+          <LandingHero onSelectAction={handleHeroActionSelect} highContrast={highContrast} />
 
-      {/* Error Notification Bar */}
-      {errorMessage && (
-        <div
-          role="alert"
-          className="max-w-7xl mx-auto px-4 mt-4 sm:px-6 w-full"
-        >
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 text-red-800 dark:text-red-200 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-2xs"
-          >
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" aria-hidden="true" />
-              <span className="font-medium">{errorMessage}</span>
+          {/* Error notification */}
+          {errorMessage && (
+            <div role="alert" className="max-w-4xl mx-auto px-4 my-2 w-full z-20 relative">
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
+                  <span className="font-medium">{errorMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setErrorMessage(null)}
+                  className="text-xs font-semibold text-red-300 hover:underline"
+                >
+                  Dismiss
+                </button>
+              </motion.div>
             </div>
-            <button
-              type="button"
-              onClick={() => setErrorMessage(null)}
-              className="text-xs font-semibold text-red-800 dark:text-red-300 hover:underline"
-            >
-              Dismiss
-            </button>
-          </motion.div>
-        </div>
-      )}
+          )}
 
-      {/* Main Content Area */}
-      <main id="main-content" role="main" className="flex-1 max-w-7xl mx-auto px-4 py-6 sm:px-6 w-full space-y-6">
-        {!analysisResult ? (
-          /* Document Upload & Ingestion View */
-          <DocumentUploader
-            onAnalyzeText={handleAnalyzeText}
-            onAnalyzeFile={handleAnalyzeFile}
-            isLoading={isLoading}
-            highContrast={highContrast}
-          />
-        ) : (
-          /* Active Document Analysis Dashboard */
-          <div className="space-y-6">
-            {/* Top Risk Score & Executive Summary Card */}
-            <RiskOverviewCard
-              summary={analysisResult.summary}
-              missingProtections={analysisResult.missingProtections}
+          {/* Document uploader */}
+          <div className="relative z-20">
+            <DocumentUploader
+              onAnalyzeText={handleAnalyzeText}
+              onAnalyzeFile={handleAnalyzeFile}
+              isLoading={isLoading}
               highContrast={highContrast}
+              forcedTab={forcedUploadTab}
+            />
+          </div>
+
+          <SampleCardsSection onSelectSample={handleSampleSelect} isLoading={isLoading} />
+          <FeatureHighlightBar />
+          {sharedFooter}
+        </div>
+      ) : (
+        /* -------------------------------------------------- */
+        /* ANALYSIS DASHBOARD VIEW                             */
+        /* -------------------------------------------------- */
+        <div className="relative min-h-screen flex flex-col text-white">
+          {/* Shared navbar — analysis mode with controls */}
+          <AppNavbar
+            mode="analysis"
+            documentTitle={analysisResult.summary.documentType || analysisResult.fileName}
+            highContrast={highContrast}
+            onToggleHighContrast={() => setHighContrast(!highContrast)}
+            onReset={handleReset}
+            onPrint={handlePrint}
+          />
+
+          <main
+            id="main-content"
+            role="main"
+            className="flex-1 max-w-7xl mx-auto px-4 py-6 sm:px-6 w-full space-y-6 relative z-10"
+          >
+            {/* Analysis hero banner */}
+            <AnalysisHeroBanner
+              documentTitle={analysisResult.fileName || 'Contract.pdf'}
+              documentType={analysisResult.summary.documentType}
+              overallRiskScore={analysisResult.summary.overallRiskScore}
+              onReset={handleReset}
+              onPrint={handlePrint}
+              onOpenRag={() => setActiveTab('rag')}
             />
 
-            {/* Feature Tab Navigation */}
-            <nav
-              role="tablist"
-              aria-label="Legal Assistant Analysis Tabs"
-              className={`flex items-center gap-2 border-b transition-colors overflow-x-auto pb-px ${
-                highContrast ? 'border-neutral-800' : 'border-neutral-200'
-              }`}
-            >
-              <motion.button
-                type="button"
-                role="tab"
-                id="tab-risk"
-                aria-selected={activeTab === 'risk'}
-                aria-controls="panel-risk"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setActiveTab('risk')}
-                className={`py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  activeTab === 'risk'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                }`}
+            <div className="space-y-6">
+              {/* Risk overview card */}
+              <RiskOverviewCard
+                summary={analysisResult.summary}
+                missingProtections={analysisResult.missingProtections}
+                highContrast={highContrast}
+              />
+
+              {/* Tab navigation */}
+              <nav
+                role="tablist"
+                aria-label="Legal Assistant Analysis Tabs"
+                className="flex items-center gap-2 border-b border-cyan-500/20 overflow-x-auto pb-px bg-slate-950/60 p-2 rounded-2xl backdrop-blur-md"
               >
-                <Layers className="w-4 h-4" aria-hidden="true" />
-                <span>Clause Risk Engine</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-200/80 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold">
-                  {analysisResult.clauses.length}
-                </span>
-              </motion.button>
+                {(
+                  [
+                    {
+                      id: 'risk' as const,
+                      label: 'Clause Risk Engine',
+                      icon: <Layers className="w-4 h-4" aria-hidden="true" />,
+                      badge: (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-950 text-cyan-300 font-bold border border-cyan-400/40">
+                          {analysisResult.clauses.length}
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'simplifier' as const,
+                      label: 'Side-by-Side Legalese Simplifier',
+                      icon: <Sparkles className="w-4 h-4" aria-hidden="true" />,
+                    },
+                    {
+                      id: 'rag' as const,
+                      label: 'RAG Interactive Q&A',
+                      icon: <MessageSquare className="w-4 h-4" aria-hidden="true" />,
+                      badge: (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-950 text-blue-200 border border-blue-400/40 font-bold inline-flex items-center gap-1">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500" />
+                          </span>
+                          <span>Vector</span>
+                        </span>
+                      ),
+                    },
+                    {
+                      id: 'prepkit' as const,
+                      label: 'Lawyer Consultation Checklist',
+                      icon: <ClipboardList className="w-4 h-4" aria-hidden="true" />,
+                    },
+                  ] as const
+                ).map(tab => (
+                  <motion.button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    id={`tab-${tab.id}`}
+                    aria-selected={activeTab === tab.id}
+                    aria-controls={`panel-${tab.id}`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-3 px-4 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-2 focus:outline-none ${
+                      activeTab === tab.id
+                        ? 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(56,189,248,0.5)]'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                    {'badge' in tab && tab.badge}
+                  </motion.button>
+                ))}
+              </nav>
 
-              <motion.button
-                type="button"
-                role="tab"
-                id="tab-simplifier"
-                aria-selected={activeTab === 'simplifier'}
-                aria-controls="panel-simplifier"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setActiveTab('simplifier')}
-                className={`py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  activeTab === 'simplifier'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                }`}
-              >
-                <Sparkles className="w-4 h-4" aria-hidden="true" />
-                <span>Side-by-Side Legalese Simplifier</span>
-              </motion.button>
+              {/* Tab panels */}
+              <AnimatePresence mode="wait">
+                {activeTab === 'risk' && (
+                  <motion.div
+                    key="panel-risk"
+                    id="panel-risk"
+                    role="tabpanel"
+                    aria-labelledby="tab-risk"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ClauseRiskEngine clauses={analysisResult.clauses} highContrast={highContrast} />
+                  </motion.div>
+                )}
 
-              <motion.button
-                type="button"
-                role="tab"
-                id="tab-rag"
-                aria-selected={activeTab === 'rag'}
-                aria-controls="panel-rag"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setActiveTab('rag')}
-                className={`py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  activeTab === 'rag'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                }`}
-              >
-                <MessageSquare className="w-4 h-4" aria-hidden="true" />
-                <span>RAG Interactive Q&A</span>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800 font-bold inline-flex items-center gap-1.5">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
-                  </span>
-                  <span>Vector Grounded</span>
-                </span>
-              </motion.button>
+                {activeTab === 'simplifier' && (
+                  <motion.div
+                    key="panel-simplifier"
+                    id="panel-simplifier"
+                    role="tabpanel"
+                    aria-labelledby="tab-simplifier"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <LegaleseSimplifier clauses={analysisResult.clauses} highContrast={highContrast} />
+                  </motion.div>
+                )}
 
-              <motion.button
-                type="button"
-                role="tab"
-                id="tab-prepkit"
-                aria-selected={activeTab === 'prepkit'}
-                aria-controls="panel-prepkit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setActiveTab('prepkit')}
-                className={`py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  activeTab === 'prepkit'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                }`}
-              >
-                <ClipboardList className="w-4 h-4" aria-hidden="true" />
-                <span>Lawyer Consultation Checklist</span>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 font-bold inline-flex items-center gap-1.5">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-                  </span>
-                  <span>Prep Kit</span>
-                </span>
-              </motion.button>
-            </nav>
+                {activeTab === 'rag' && (
+                  <motion.div
+                    key="panel-rag"
+                    id="panel-rag"
+                    role="tabpanel"
+                    aria-labelledby="tab-rag"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <RagChatBot
+                      documentId={analysisResult.documentId}
+                      documentText={documentText}
+                      highContrast={highContrast}
+                    />
+                  </motion.div>
+                )}
 
-            {/* Animated Tab Panels */}
-            <AnimatePresence mode="wait">
-              {activeTab === 'risk' && (
-                <motion.div
-                  key="panel-risk"
-                  id="panel-risk"
-                  role="tabpanel"
-                  aria-labelledby="tab-risk"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ClauseRiskEngine
-                    clauses={analysisResult.clauses}
-                    highContrast={highContrast}
-                  />
-                </motion.div>
-              )}
+                {activeTab === 'prepkit' && (
+                  <motion.div
+                    key="panel-prepkit"
+                    id="panel-prepkit"
+                    role="tabpanel"
+                    aria-labelledby="tab-prepkit"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <LawyerPrepKit
+                      summary={analysisResult.summary}
+                      questions={analysisResult.lawyerPrepKit.questionsToAsk}
+                      missingProtections={analysisResult.missingProtections}
+                      keyNegotiationPoints={analysisResult.lawyerPrepKit.keyNegotiationPoints}
+                      criticalChecklist={analysisResult.lawyerPrepKit.criticalChecklist}
+                      highContrast={highContrast}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </main>
 
-              {activeTab === 'simplifier' && (
-                <motion.div
-                  key="panel-simplifier"
-                  id="panel-simplifier"
-                  role="tabpanel"
-                  aria-labelledby="tab-simplifier"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <LegaleseSimplifier
-                    clauses={analysisResult.clauses}
-                    highContrast={highContrast}
-                  />
-                </motion.div>
-              )}
+          {/* Floating RAG robot widget */}
+          <FloatingRagRobot
+            documentId={analysisResult.documentId}
+            documentText={documentText}
+            highContrast={highContrast}
+          />
 
-              {activeTab === 'rag' && (
-                <motion.div
-                  key="panel-rag"
-                  id="panel-rag"
-                  role="tabpanel"
-                  aria-labelledby="tab-rag"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <RagChatBot
-                    documentId={analysisResult.documentId}
-                    documentText={documentText}
-                    highContrast={highContrast}
-                  />
-                </motion.div>
-              )}
-
-              {activeTab === 'prepkit' && (
-                <motion.div
-                  key="panel-prepkit"
-                  id="panel-prepkit"
-                  role="tabpanel"
-                  aria-labelledby="tab-prepkit"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <LawyerPrepKit
-                    summary={analysisResult.summary}
-                    questions={analysisResult.lawyerPrepKit.questionsToAsk}
-                    missingProtections={analysisResult.missingProtections}
-                    keyNegotiationPoints={analysisResult.lawyerPrepKit.keyNegotiationPoints}
-                    criticalChecklist={analysisResult.lawyerPrepKit.criticalChecklist}
-                    highContrast={highContrast}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
-      </main>
-
-      {/* Footer with Compliance Landmarks */}
-      <footer
-        role="contentinfo"
-        className={`border-t py-6 mt-12 transition-colors ${
-          highContrast
-            ? 'bg-neutral-950 text-neutral-400 border-neutral-800'
-            : 'bg-white text-neutral-500 border-neutral-200'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <Scale className="w-4 h-4 text-blue-600" aria-hidden="true" />
-            <span className="font-semibold text-neutral-800 dark:text-neutral-200">LexiGuard &middot; AI for Legal Assistance & Access</span>
-          </div>
-
-          <p className="text-center sm:text-right max-w-xl text-[11px] leading-relaxed">
-            LexiGuard provides automated legal document analysis and clause education.
-            It does not constitute licensed legal advice, lawyer solicitation, or formal representation.
-          </p>
+          {sharedFooter}
         </div>
-      </footer>
+      )}
     </div>
   );
 }
