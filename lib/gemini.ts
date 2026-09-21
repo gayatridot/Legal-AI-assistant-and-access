@@ -21,27 +21,29 @@ CRITICAL COMPLIANCE RULES:
 `;
 
 let genAiClient: GoogleGenAI | null = null;
+let lastApiKey: string | undefined = undefined;
 
 /**
  * Retrieves or lazily instantiates the Google Gen AI client.
- * Strictly checks process.env.GEMINI_API_KEY.
+ * Dynamically re-instantiates if process.env.GEMINI_API_KEY changes at runtime.
  *
  * @returns GoogleGenAI instance
  */
 export function getGeminiClient(): GoogleGenAI {
-  if (!genAiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+  const currentKey = process.env.GEMINI_API_KEY;
+  if (!genAiClient || lastApiKey !== currentKey) {
+    if (!currentKey) {
       console.warn('[LexiGuard] GEMINI_API_KEY environment variable is not defined.');
     }
     genAiClient = new GoogleGenAI({
-      apiKey: apiKey || '',
+      apiKey: currentKey || '',
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
         },
       },
     });
+    lastApiKey = currentKey;
   }
   return genAiClient;
 }

@@ -52,8 +52,26 @@ export default function App() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to analyze document.');
+        const errorText = await response.text();
+        let errorMsg = '';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMsg = errorData.error;
+        } catch {
+          // Response is non-JSON (e.g. Vercel 404, 413, or 504 HTML page)
+        }
+        if (!errorMsg) {
+          if (response.status === 404) {
+            errorMsg = 'API endpoint not found (404). Ensure Vercel serverless functions are deployed.';
+          } else if (response.status === 413) {
+            errorMsg = 'Document size exceeds Vercel serverless limit (4.5MB). Please analyze shorter text segments.';
+          } else if (response.status === 504) {
+            errorMsg = 'Analysis request timed out (504). Please try analyzing a shorter document.';
+          } else {
+            errorMsg = `Server error (${response.status}): Failed to analyze document.`;
+          }
+        }
+        throw new Error(errorMsg);
       }
 
       const result: DocumentAnalysisResult = await response.json();
@@ -96,8 +114,26 @@ export default function App() {
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to analyze PDF document.');
+          const errorText = await response.text();
+          let errorMsg = '';
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMsg = errorData.error;
+          } catch {
+            // Response is non-JSON (e.g. Vercel 404, 413, or 504 HTML page)
+          }
+          if (!errorMsg) {
+            if (response.status === 404) {
+              errorMsg = 'API endpoint not found (404). Ensure Vercel serverless functions are deployed.';
+            } else if (response.status === 413) {
+              errorMsg = 'PDF size exceeds Vercel serverless upload limit (4.5MB). Please copy and paste the clause text directly into the text tab.';
+            } else if (response.status === 504) {
+              errorMsg = 'PDF analysis request timed out (504). Try analyzing a smaller file or pasting clause text directly.';
+            } else {
+              errorMsg = `Server error (${response.status}): Failed to analyze PDF document.`;
+            }
+          }
+          throw new Error(errorMsg);
         }
 
         const result: DocumentAnalysisResult = await response.json();

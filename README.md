@@ -151,3 +151,25 @@ npm run build
 ```
 
 Open `http://localhost:3000` in your browser. Select any sample contract to immediately inspect clause risks, translations, grounded RAG search, and lawyer prep checklists.
+
+---
+
+## 8. Deploying to Vercel
+
+LexiGuard is pre-configured for seamless deployment to **Vercel** via Serverless Functions (`api/index.ts`) and automatic SPA routing (`vercel.json`).
+
+### Step-by-Step Vercel Setup
+
+1. **Push Code to GitHub / Git Repository**.
+2. **Import Project to Vercel**:
+   - Go to [Vercel Dashboard](https://vercel.com/new).
+   - Select your repository.
+   - Vercel will automatically detect Vite / Node framework configuration.
+3. **Configure Environment Variables**:
+   - Under **Project Settings** -> **Environment Variables**, add:
+     - **Key**: `GEMINI_API_KEY`
+     - **Value**: `Your_Actual_Gemini_API_Key`
+   - Click **Save**.
+4. **Deploy**:
+   - Click **Deploy**. Vercel will build the frontend and route `/api/*` requests to Vercel Serverless Functions.
+
