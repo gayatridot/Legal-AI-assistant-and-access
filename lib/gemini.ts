@@ -51,12 +51,12 @@ export function getGeminiClient(): GoogleGenAI {
 /**
  * The recommended high-speed, cost-effective Gemini model for contract analysis.
  */
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
 
 /**
  * Secondary candidate models used if the primary model hits temporary 503 high demand or capacity limits.
  */
-export const FALLBACK_GEMINI_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+export const FALLBACK_GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-flash-8b'];
 
 export interface ResilienceGenerateOptions {
   contents: any;

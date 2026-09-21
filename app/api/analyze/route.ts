@@ -1,6 +1,7 @@
 /**
- * @fileoverview Next.js App Router API Route: /app/api/analyze/route.ts
- * Ingests raw document text or file payload, sanitizes inputs, and runs comprehensive clause analysis.
+ * @fileoverview Vercel Serverless API Route: POST /api/analyze
+ * Handles both plain-text and base64 PDF payloads, sanitizes inputs,
+ * and runs comprehensive clause analysis via Gemini AI with algorithmic fallback.
  */
 
 import { analyzeLegalDocument } from '../../../lib/document-analyzer.js';
@@ -8,63 +9,59 @@ import { sanitizeLegalText, validateDocumentText } from '../../../lib/sanitizer.
 
 export async function POST(req: Request): Promise<Response> {
   try {
-    const contentType = req.headers.get('content-type') || '';
-    let documentText = '';
-    let fileName = 'Uploaded-Document';
+    const body = await req.json();
 
-    if (contentType.includes('application/json')) {
-      const body = await req.json();
-      documentText = body.documentText || '';
-      fileName = body.fileName || fileName;
-    } else if (contentType.includes('multipart/form-data')) {
-      const formData = await req.formData();
-      const file = formData.get('file');
-      const textParam = formData.get('text');
+    const { documentText, fileName, fileBase64, isPdf } = body as {
+      documentText?: string;
+      fileName?: string;
+      fileBase64?: string;
+      isPdf?: boolean;
+    };
 
-      if (file && typeof file === 'object' && 'arrayBuffer' in file) {
-        fileName = (file as File).name;
-        const arrayBuf = await (file as File).arrayBuffer();
-        const buffer = Buffer.from(arrayBuf);
+    let textToAnalyze = documentText || '';
 
-        // Check if PDF
-        if (fileName.toLowerCase().endsWith('.pdf') || (file as File).type === 'application/pdf') {
-          const { parsePdfBuffer } = await import('../../../lib/pdf-parser.js');
-          const pdfResult = await parsePdfBuffer(buffer);
-          documentText = pdfResult.text;
-        } else {
-          documentText = buffer.toString('utf-8');
+    // ── PDF base64 path (matches what the front-end sends) ──
+    if (fileBase64 && isPdf) {
+      try {
+        const buffer = Buffer.from(fileBase64, 'base64');
+
+        if (buffer.length === 0) {
+          return new Response(
+            JSON.stringify({ error: 'The uploaded PDF file appears to be empty. Please select a valid document.' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } },
+          );
         }
-      } else if (typeof textParam === 'string') {
-        documentText = textParam;
+
+        // Dynamic import keeps pdf-parse out of the cold-start critical path
+        const { parsePdfBuffer } = await import('../../../lib/pdf-parser.js');
+        const pdfResult = await parsePdfBuffer(buffer);
+        textToAnalyze = pdfResult.text;
+      } catch (pdfErr: unknown) {
+        const pdfMsg = pdfErr instanceof Error ? pdfErr.message : 'PDF parsing failed';
+        return new Response(
+          JSON.stringify({
+            error: `Could not extract text from this PDF: ${pdfMsg}. If the PDF contains scanned images, please paste the clause text directly.`,
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        );
       }
-    } else {
-      // Direct text stream
-      documentText = await req.text();
     }
 
-    const sanitized = sanitizeLegalText(documentText);
-    const validation = validateDocumentText(sanitized);
+    const sanitized = sanitizeLegalText(textToAnalyze);
+    const validation = validateDocumentText(sanitized, Boolean(isPdf));
 
     if (!validation.isValid) {
       return new Response(
-        JSON.stringify({
-          error: validation.error || 'Document content is insufficient for legal analysis.',
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: validation.error || 'Document content is insufficient for legal analysis.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
-    const result = await analyzeLegalDocument(sanitized, fileName);
+    const result = await analyzeLegalDocument(sanitized, fileName || 'Legal-Document.pdf');
 
     return new Response(JSON.stringify(result), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store',
-      },
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal analysis error occurred.';
@@ -73,13 +70,9 @@ export async function POST(req: Request): Promise<Response> {
     return new Response(
       JSON.stringify({
         error: message,
-        disclaimer:
-          'Provides educational and informational assistance only; does not replace formal legal counsel.',
+        disclaimer: 'Provides educational and informational assistance only; does not replace formal legal counsel.',
       }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   }
 }
