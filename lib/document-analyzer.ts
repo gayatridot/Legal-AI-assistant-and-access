@@ -168,7 +168,17 @@ function fallbackAlgorithmicAnalysis(
   fileName?: string
 ): DocumentAnalysisResult {
   // Split into paragraphs / sections
-  const rawParagraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 40);
+  let rawParagraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 40);
+  if (rawParagraphs.length === 0) {
+    rawParagraphs = text.split(/\n+/).map(p => p.trim()).filter(p => p.length > 30);
+  }
+  if (rawParagraphs.length === 0 && text.trim().length > 0) {
+    rawParagraphs = [];
+    for (let i = 0; i < text.length; i += 300) {
+      const slice = text.slice(i, i + 300).trim();
+      if (slice.length > 0) rawParagraphs.push(slice);
+    }
+  }
   const clauses: ClauseAnalysis[] = [];
 
   rawParagraphs.slice(0, 15).forEach((para, idx) => {

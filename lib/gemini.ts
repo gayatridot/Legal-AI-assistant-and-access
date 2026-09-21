@@ -91,10 +91,7 @@ export async function generateWithResilience(
       const requestPromise = ai.models.generateContent({
         model,
         contents: options.contents,
-        config: {
-          thinkingConfig: { thinkingBudget: 0 },
-          ...(options.config || {}),
-        },
+        config: options.config || {},
       });
 
       const response: any = await Promise.race([requestPromise, timeoutPromise]);

@@ -26,10 +26,10 @@ export async function parsePdfBuffer(buffer: Buffer | Uint8Array): Promise<PDFEx
 
   // Ensure standard Node Buffer
   const nodeBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
-
-  const parser = new PDFParse({ data: nodeBuffer });
+  let parser: any = null;
 
   try {
+    parser = new PDFParse({ data: nodeBuffer });
     const textResult = await parser.getText();
     const infoResult = await parser.getInfo().catch(() => undefined);
     const sanitizedText = sanitizeLegalText(textResult.text || '');
@@ -44,6 +44,8 @@ export async function parsePdfBuffer(buffer: Buffer | Uint8Array): Promise<PDFEx
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(`Failed to parse PDF document: ${message}`);
   } finally {
-    await parser.destroy().catch(() => {});
+    if (parser && typeof parser.destroy === 'function') {
+      await parser.destroy().catch(() => {});
+    }
   }
 }
