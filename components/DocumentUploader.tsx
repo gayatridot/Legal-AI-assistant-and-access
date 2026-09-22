@@ -1,4 +1,4 @@
-import { useState, useRef, ChangeEvent, DragEvent } from 'react';
+import { useState, useEffect, useRef, ChangeEvent, DragEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   UploadCloud,
@@ -56,10 +56,10 @@ export function DocumentUploader({
     forcedTab || 'samples',
   );
 
-  // Sync forcedTab if passed from parent
-  if (forcedTab && forcedTab !== activeTab) {
-    setActiveTab(forcedTab);
-  }
+  // Sync forcedTab changes from parent without a render-time state mutation
+  useEffect(() => {
+    if (forcedTab) setActiveTab(forcedTab);
+  }, [forcedTab]);
 
   const [pastedText, setPastedText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
