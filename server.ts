@@ -15,7 +15,7 @@ import { parsePdfBuffer } from './lib/pdf-parser.js';
 
 dotenv.config();
 
-const PORT = 3000;
+const DEFAULT_PORT = Number(process.env.PORT || 3000);
 const app = express();
 
 // Increase payload limit for large contract text & base64 PDF uploads
@@ -123,10 +123,16 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 /**
  * Start Server with Vite Middleware
  */
-async function start() {
+async function start(port = DEFAULT_PORT) {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: {
+          port: Number(process.env.VITE_HMR_PORT || 24679),
+          host: 'localhost',
+        },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -138,8 +144,22 @@ async function start() {
     });
   }
 
-  app.listen(PORT, 'localhost', () => {
-    console.log(`[LexiGuard] Server listening on http://localhost:${PORT}`);
+  return new Promise<void>((resolve, reject) => {
+    const server = app.listen(port, 'localhost', () => {
+      console.log(`[LexiGuard] Server listening on http://localhost:${port}`);
+      resolve();
+    });
+
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        const nextPort = port + 1;
+        console.warn(`[LexiGuard] Port ${port} is busy. Retrying on ${nextPort}.`);
+        server.close();
+        start(nextPort).then(resolve).catch(reject);
+        return;
+      }
+      reject(err);
+    });
   });
 }
 

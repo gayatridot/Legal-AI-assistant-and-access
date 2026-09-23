@@ -3,6 +3,8 @@
  * Handles both plain-text and base64 PDF payloads, sanitizes inputs,
  * and runs comprehensive clause analysis via Gemini AI with algorithmic fallback.
  */
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 import { analyzeLegalDocument } from '../../../lib/document-analyzer.js';
 import { sanitizeLegalText, validateDocumentText } from '../../../lib/sanitizer.js';

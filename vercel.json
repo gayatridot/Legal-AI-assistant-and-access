@@ -17,5 +17,8 @@
       "source": "/:path*",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "NODE_OPTIONS": "--max-old-space-size=512"
+  }
 }

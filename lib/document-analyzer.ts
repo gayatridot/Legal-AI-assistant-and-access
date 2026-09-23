@@ -149,8 +149,9 @@ Please conduct a thorough legal clause risk and comprehension analysis. Return O
         disclaimer:
           'Provides educational and informational assistance only; does not replace formal legal counsel.',
       };
-    } catch {
-      // Deterministic algorithmic fallback activates seamlessly if all generative models are offline
+    } catch (geminiErr: unknown) {
+      // Log Gemini errors to server console (visible in Vercel function logs)
+      console.error('[LexiGuard] Gemini analysis failed, falling back to heuristic analyzer:', geminiErr);
     }
   }
 

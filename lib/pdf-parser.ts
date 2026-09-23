@@ -1,9 +1,3 @@
-/**
- * @fileoverview Server-side PDF text extraction utility using pdf-parse v2.
- * Uses the named PDFParse class exported by pdf-parse v2.
- */
-
-import { PDFParse } from 'pdf-parse';
 import { sanitizeLegalText } from './sanitizer.js';
 
 export interface PDFExtractionResult {
@@ -12,32 +6,52 @@ export interface PDFExtractionResult {
   info?: Record<string, unknown>;
 }
 
-/**
- * Parses a PDF buffer into sanitized, plain-text string.
- */
+export async function resolvePdfJsLib(): Promise<any> {
+  const pdfjsModule = await import('pdfjs-dist/legacy/build/pdf.js');
+  const pdfjsLib = (pdfjsModule as any).default ?? pdfjsModule;
+
+  if (typeof pdfjsLib?.getDocument !== 'function') {
+    throw new Error('PDF.js failed to initialize in the current runtime.');
+  }
+
+  return pdfjsLib;
+}
+
 export async function parsePdfBuffer(buffer: Buffer | Uint8Array): Promise<PDFExtractionResult> {
   if (!buffer || buffer.length === 0) {
     throw new Error('Empty PDF buffer received.');
   }
 
-  const nodeBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+  const uint8Array = buffer instanceof Uint8Array
+    ? new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+    : new Uint8Array(buffer);
 
-  let parser: InstanceType<typeof PDFParse> | null = null;
-  try {
-    parser = new PDFParse({ data: nodeBuffer });
-    const textResult = await parser.getText();
-    const sanitizedText = sanitizeLegalText(textResult.text || '');
+  const pdfjsLib = await resolvePdfJsLib();
 
-    return {
-      text: sanitizedText,
-      pageCount: textResult.total || 1,
-    };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    throw new Error(`Failed to parse PDF document: ${message}`);
-  } finally {
-    if (parser && typeof parser.destroy === 'function') {
-      await parser.destroy().catch(() => {});
-    }
+  const loadingTask = pdfjsLib.getDocument({
+    data: uint8Array,
+    useSystemFonts: true,
+  });
+
+  const pdf = await loadingTask.promise;
+  let fullText = '';
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items
+      .map((item: any) => (item as any).str || '')
+      .join(' ');
+    fullText += pageText + '\n\n';
   }
+
+  if (!fullText.trim()) {
+    throw new Error('No readable text found. This PDF may be scanned or image-only.');
+  }
+
+  return {
+    text: sanitizeLegalText(fullText),
+    pageCount: pdf.numPages,
+    info: {},
+  };
 }
