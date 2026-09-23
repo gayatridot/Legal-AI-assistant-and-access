@@ -28,9 +28,15 @@ export async function parsePdfBuffer(buffer: Buffer | Uint8Array): Promise<PDFEx
 
   const pdfjsLib = await resolvePdfJsLib();
 
+  if (pdfjsLib.GlobalWorkerOptions) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  }
+
   const loadingTask = pdfjsLib.getDocument({
     data: uint8Array,
     useSystemFonts: true,
+    disableWorker: true,
+    isEvalSupported: false,
   });
 
   const pdf = await loadingTask.promise;
