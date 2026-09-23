@@ -14,6 +14,10 @@ export async function resolvePdfJsLib(): Promise<any> {
     throw new Error('PDF.js failed to initialize in the current runtime.');
   }
 
+  if (pdfjsLib.GlobalWorkerOptions) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  }
+
   return pdfjsLib;
 }
 
@@ -27,10 +31,6 @@ export async function parsePdfBuffer(buffer: Buffer | Uint8Array): Promise<PDFEx
     : new Uint8Array(buffer);
 
   const pdfjsLib = await resolvePdfJsLib();
-
-  if (pdfjsLib.GlobalWorkerOptions) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-  }
 
   const loadingTask = pdfjsLib.getDocument({
     data: uint8Array,
