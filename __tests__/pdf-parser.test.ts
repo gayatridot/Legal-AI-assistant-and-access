@@ -3,13 +3,27 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parsePdfBuffer, resolvePdfJsLib } from '../lib/pdf-parser.js';
+import { normalizePdfJsLib, parsePdfBuffer, resolvePdfJsLib } from '../lib/pdf-parser.js';
 import { sanitizeLegalText, validateDocumentText } from '../lib/sanitizer.js';
 
 describe('PDF Parser & Text Sanitization', () => {
   it('should expose the pdfjs library API needed for PDF text extraction', async () => {
     const pdfjsLib = await resolvePdfJsLib();
     expect(typeof pdfjsLib.getDocument).toBe('function');
+  });
+
+  it('should normalize nested pdfjs module exports and retain getDocument', () => {
+    const pdfjsLib = normalizePdfJsLib({
+      default: {
+        default: {
+          GlobalWorkerOptions: { workerSrc: './worker.js' },
+          getDocument: () => ({ promise: Promise.resolve({ numPages: 0 }) }),
+        },
+      },
+    });
+
+    expect(typeof pdfjsLib.getDocument).toBe('function');
+    expect(pdfjsLib.GlobalWorkerOptions.workerSrc).toBe('');
   });
 
   it('should accept a Node Buffer and convert it to a Uint8Array for PDF.js', async () => {

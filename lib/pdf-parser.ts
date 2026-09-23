@@ -6,19 +6,57 @@ export interface PDFExtractionResult {
   info?: Record<string, unknown>;
 }
 
+export function normalizePdfJsLib(pdfjsModule: any): any {
+  if (!pdfjsModule || (typeof pdfjsModule !== 'object' && typeof pdfjsModule !== 'function')) {
+    throw new Error('PDF.js module is unavailable in the current runtime.');
+  }
+
+  const seen = new Set<any>();
+  const queue = [pdfjsModule];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || typeof current !== 'object' && typeof current !== 'function') {
+      continue;
+    }
+    if (seen.has(current)) {
+      continue;
+    }
+    seen.add(current);
+
+    if (typeof current.getDocument === 'function') {
+      if (current.GlobalWorkerOptions) {
+        current.GlobalWorkerOptions.workerSrc = '';
+      }
+      return current;
+    }
+
+    if (current.default && !seen.has(current.default)) {
+      queue.push(current.default);
+    }
+  }
+
+  throw new Error('PDF.js failed to initialize in the current runtime.');
+}
+
 export async function resolvePdfJsLib(): Promise<any> {
-  const pdfjsModule = await import('pdfjs-dist/legacy/build/pdf.js');
-  const pdfjsLib = (pdfjsModule as any).default ?? pdfjsModule;
+  const importCandidates = [
+    'pdfjs-dist/legacy/build/pdf.js',
+    'pdfjs-dist/legacy/build/pdf.mjs',
+  ];
 
-  if (typeof pdfjsLib?.getDocument !== 'function') {
-    throw new Error('PDF.js failed to initialize in the current runtime.');
+  let lastError: unknown;
+
+  for (const specifier of importCandidates) {
+    try {
+      const pdfjsModule = await import(specifier);
+      return normalizePdfJsLib(pdfjsModule);
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  if (pdfjsLib.GlobalWorkerOptions) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-  }
-
-  return pdfjsLib;
+  throw new Error(lastError instanceof Error ? lastError.message : 'PDF.js failed to initialize in the current runtime.');
 }
 
 export async function parsePdfBuffer(buffer: Buffer | Uint8Array): Promise<PDFExtractionResult> {
