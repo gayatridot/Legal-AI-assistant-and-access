@@ -1,3 +1,4 @@
+import * as pdfjsStaticModule from 'pdfjs-dist';
 import { sanitizeLegalText } from './sanitizer.js';
 
 export interface PDFExtractionResult {
@@ -40,23 +41,12 @@ export function normalizePdfJsLib(pdfjsModule: any): any {
 }
 
 export async function resolvePdfJsLib(): Promise<any> {
-  const importCandidates = [
-    'pdfjs-dist/legacy/build/pdf.js',
-    'pdfjs-dist/legacy/build/pdf.mjs',
-  ];
-
-  let lastError: unknown;
-
-  for (const specifier of importCandidates) {
-    try {
-      const pdfjsModule = await import(specifier);
-      return normalizePdfJsLib(pdfjsModule);
-    } catch (error) {
-      lastError = error;
-    }
+  try {
+    return normalizePdfJsLib(pdfjsStaticModule);
+  } catch (error) {
+    const pdfjsModule = await import('pdfjs-dist');
+    return normalizePdfJsLib(pdfjsModule);
   }
-
-  throw new Error(lastError instanceof Error ? lastError.message : 'PDF.js failed to initialize in the current runtime.');
 }
 
 export async function parsePdfBuffer(buffer: Buffer | Uint8Array): Promise<PDFExtractionResult> {
